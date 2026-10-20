@@ -1,9 +1,148 @@
 import sys
-from PySide6.QtWidgets import (QApplication, QMessageBox, QTableWidget, QVBoxLayout, QWidget, QLineEdit, QPushButton, QLabel, QMainWindow, QCheckBox, QHBoxLayout)
+from PySide6.QtWidgets import (QApplication, QMessageBox, QTableWidget, QVBoxLayout, QWidget, QLineEdit, QPushButton, QLabel, QMainWindow, QCheckBox, QHBoxLayout, QFrame, QTextEdit)
 from client import Login_request, Register_request, Change_Password_request, Change_Username_request, Delete_Account_request, Login_asGuest_request
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction, QIcon
 
+class AppWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Packet Lens")
+        self.setStyleSheet("background-color: darkblue;")  
+        self.resize(1200, 700)
+
+       
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+
+        
+        main_layout = QHBoxLayout(central_widget)
+        main_layout.setContentsMargins(0, 5, 0, 5) # 1-move right, 2-move down, 3-move left, 4-move up
+        main_layout.setSpacing(1)
+
+       
+        self.left_screen = QLabel("Menu")
+        self.left_screen.setStyleSheet("background-color: darkblue; font-size: 50px; color: white;")  
+        self.left_screen.setAlignment(Qt.AlignHCenter | Qt.AlignTop) 
+
+        
+        self.right_screen = QWidget()
+        self.right_screen.setStyleSheet("background-color: #cfcfcf;")
+
+      
+        right_layout = QVBoxLayout(self.right_screen)
+        right_layout.setContentsMargins(0, 40, 0, 0) 
+
+      
+        title_label = QLabel("Welcome to PacketLens")
+        title_label.setStyleSheet("color: black; font-size: 50px; font-weight: bold; background: transparent;")
+        font = title_label.font()
+        font.setUnderline(True)
+        title_label.setFont(font)
+        title_label.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
+        right_layout.addWidget(title_label)
+
+        
+        try:
+            with open("id.txt", "r", encoding="utf-8") as file:
+                lines = file.readlines()
+                code = lines[0].strip()
+                message = lines[1].strip()
+
+            if code in ["200", "201", "299"]:
+                label2 = QLabel(message)
+                label2.setStyleSheet("color: black; font-size: 40px; font-weight: bold; background: transparent;")
+                label2.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
+                right_layout.addWidget(label2)
+                labelinfo = QLabel("PacketLens is a powerful network analysis tool that allows you to\ncapture, analyze, and visualize network traffic in real-time.\nWith PacketLens, you can gain deep insights into your network's performance, troubleshoot issues,\nand ensure the security of your data.")
+                labelinfo.setStyleSheet("color: black; font-size: 23px; background: transparent;")
+                labelinfo.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
+                right_layout.addWidget(labelinfo)
+                sperator = QFrame() 
+                sperator.setFrameShape(QFrame.HLine)
+                sperator.setFrameShadow(QFrame.Sunken)
+                right_layout.addWidget(sperator)
+
+                if code == "299":
+                   warning_label = QLabel("Beware: You are logged in as a guest. Some features may be limited and your data may not be saved!")
+                   warning_label.setStyleSheet("color: #A83C2A; font-size: 20px; font-weight: bold; background: transparent;")
+                   warning_label.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
+                   right_layout.addWidget(warning_label)
+                if code == "200" or code == "201":
+                   warning_label = QLabel("You are logged in as a registered user. Enjoy full access to all features! and your data will be saved.")
+                   warning_label.setStyleSheet("color: green; font-size: 20px; font-weight: bold; background: transparent;")
+                   warning_label.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
+                   right_layout.addWidget(warning_label)
+                labeltips = QLabel("Tips: Use the menu on the left to navigate through the application and access its features.")
+                labeltips.setStyleSheet("color: black; font-size: 23px; background: transparent;")
+                labeltips.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
+                right_layout.addWidget(labeltips)   
+                sperator2 = QFrame() 
+                sperator2.setFrameShape(QFrame.HLine)
+                sperator2.setFrameShadow(QFrame.Sunken)
+                right_layout.addWidget(sperator2)
+                labelui = QLabel("PacketLens - NetWork Packet Analyzer")
+                labelui.setStyleSheet("color: black; font-size: 27px; background: transparent;")
+                labelui.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
+                right_layout.addWidget(labelui)
+                labeldev = QLabel("Developed by Shon Algazin")
+                labeldev.setStyleSheet("color: black; font-size: 23px; background: transparent;")
+                labeldev.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
+                right_layout.addWidget(labeldev)
+                
+
+
+        except Exception as e:
+            print(f"Error reading id.txt: {e}")
+
+       
+        right_layout.addStretch(1)
+
+        
+        main_layout.addWidget(self.left_screen, 6)
+        main_layout.addWidget(self.right_screen, 40)
+              
+         
+
+    
+      
+
+      
+      
+      
+
+      
+     
+   
+
+      
+      
+      
+
+      
+         
+               
+
+      
+      
+
+
+
+   
+      
+
+
+      
+         
+        
+
+      
+      
+         
+
+
+      
+      
 
 class DeleteAccount_Window(QMainWindow):
    def __init__(self):
@@ -447,6 +586,8 @@ class RegisterWindow(QMainWindow): # Registerwindow class
         
         
         self.mw = None
+        self.aw2 = None
+        
 
         
                 
@@ -517,9 +658,12 @@ class RegisterWindow(QMainWindow): # Registerwindow class
             
 
        elif response.status_code == 201:
-          data = response.json()
-          success_msg = data.get("Message", "You have registered successfully")
-          QMessageBox.information(self, "Message", success_msg)
+          with open("id.txt", "w") as file:
+             file.write("201\n")
+             data = response.json()
+             success_msg = data.get("Message", "You have registered successfully")
+             file.write(success_msg)
+          self.show_AppWindowReg()
 
           
        else:
@@ -533,6 +677,11 @@ class RegisterWindow(QMainWindow): # Registerwindow class
           self.mw = MainWindow()
           self.mw.show()
           self.hide()
+    def show_AppWindowReg(self): 
+       if self.aw2 is None:
+          self.aw2 = AppWindow()
+          self.aw2.show()
+          self.hide()         
           
 
           
@@ -608,6 +757,8 @@ class MainWindow(QMainWindow):
         self.ow = None
         self.ww = None
         self.zw = None
+        self.aw = None
+        self.ap = None
         
 
         
@@ -715,9 +866,13 @@ class MainWindow(QMainWindow):
          return
 
       elif response.status_code == 200:
-         data = response.json()
-         success_msg = data.get("Message", "Login success")
-         QMessageBox.information(self, "Message", success_msg)
+         with open("id.txt", "w") as file:
+            file.write("200\n")
+            data = response.json()
+            success_msg = data.get("Message", "You have logged in successfully")
+            file.write(success_msg)
+         self.show_AppWindow()
+         
 
       else:
          data = response.json()
@@ -734,11 +889,13 @@ class MainWindow(QMainWindow):
          QMessageBox.warning(self, "Error", error_msg)
          return
 
-      elif response.status_code == 200:
-         data = response.json()
-         success_msg = data.get("Message", "You have logged in as a guest successfully")
-         QMessageBox.information(self, "Message", success_msg)
-
+      elif response.status_code == 299:
+         with open("id.txt", "w") as file:
+            file.write("299\n")
+            data = response.json()
+            success_msg = data.get("Message", "You have logged in as a guest")
+            file.write(success_msg)
+         self.show_AppWindowGuest()
       else:
          data = response.json()
          error_msg = data.get("Error", "Something went wrong")
@@ -818,7 +975,22 @@ class MainWindow(QMainWindow):
        if self.mw is None:
           self.mw = MainWindow()
           self.mw.show()
-          self.hide()      
+          self.hide()  
+
+    def show_AppWindow(self): 
+       if self.aw is None:
+          self.aw = AppWindow()
+          self.aw.show()
+          self.hide()   
+    def show_AppWindowGuest(self):
+       if self.ap is None:
+          self.ap = AppWindow()
+          self.ap.show()
+          self.hide()
+
+
+          
+            
 
 
 

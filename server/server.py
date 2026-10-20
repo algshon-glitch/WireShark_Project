@@ -4,8 +4,8 @@ from pymongo import MongoClient # my datebase (NoSQL)
 from werkzeug.security import check_password_hash, generate_password_hash
 from better_profanity import profanity
 from datetime import datetime
-import re
-import uuid
+import re 
+import uuid 
 
 
 
@@ -56,7 +56,7 @@ def User_Request(payload): # func that handles user request
             return {"status_code": 500, "body": {"Error": "Server error. please try again later."}} # if there is any server happened
 
         print("Register successfully")
-        return {"status_code": 201, "body": {"Message": "You have registered successfully"}} # if all is good user have registered successfully
+        return {"status_code": 201, "body": {"Message": "Hello " + username + ", it's nice to meet you!"}} # if all is good user have registered successfully
 
    
     elif action == "Login":
@@ -82,7 +82,7 @@ def User_Request(payload): # func that handles user request
             print("Error updating last login time:", e_update)
 
         print("Login successfully")
-        return {"status_code": 200, "body": {"Message": "You have logged in successfully"}}
+        return {"status_code": 200, "body": {"Message": "Welcome back " + username + ", it's nice to see you again!"}}
 
     elif action == "Changepassword":
         if not email or not re.match(EMAIL_REGEX, email): # checking if the email is correct based on EMAIL_REGEX
@@ -130,7 +130,7 @@ def User_Request(payload): # func that handles user request
 
         try:
 
-            collection.update_one(
+            collection.update_one( 
                 {"Email": email},
                 {"$set": {"Username": newusername}}
             )
@@ -169,7 +169,7 @@ def User_Request(payload): # func that handles user request
             print("Error guest login:", e)
             return {"status_code": 500, "body": {"Error": "Server error. please try again later."}}
         print("User Loged in as a guest successfully")
-        return {"status_code": 200, "body": {"Message": "You have logged in successfully your user name is " + guest_username}}
+        return {"status_code": 299, "body": {"Message": "Hello " + guest_username}}
         
         
             
@@ -253,3 +253,35 @@ def run_socket_server(): # def to run the socket connection
 if __name__ == '__main__': 
     run_socket_server()
     
+
+
+
+
+    
+
+
+    
+
+
+    
+
+
+    
+    
+    
+    
+
+
+
+
+     
+
+
+
+    
+
+
+
+          
+    
+          
