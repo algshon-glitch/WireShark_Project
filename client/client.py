@@ -1,41 +1,111 @@
-import socket
+import ctypes
 import json
+
+
+ws2_32 = ctypes.windll.ws2_32
 
 SERVER_IP = "127.0.0.1"
 SERVER_PORT = 12345
 
-class SocketResponse:
-    def __init__(self, status_code, body): # class that gets response from the server
-        self.status_code = status_code # code like: 200 or 400
-        self.body = body # data fro server
 
-    def json(self): # func to data to client_ui
+class WSADATA(ctypes.Structure):
+    _fields_ = [
+        ("wVersion", ctypes.c_ushort),
+        ("wHighVersion", ctypes.c_ushort),
+        ("szDescription", ctypes.c_char * 257),
+        ("szSystemStatus", ctypes.c_char * 129),
+        ("iMaxSockets", ctypes.c_ushort),
+        ("iMaxUDPDSeg", ctypes.c_ushort),
+        ("lpVendorInfo", ctypes.c_void_p),
+    ]
+
+
+class sockaddr_in(ctypes.Structure):
+    _fields_ = [
+        ("sin_family", ctypes.c_short),
+        ("sin_port", ctypes.c_ushort),
+        ("sin_addr", ctypes.c_ulong),
+        ("sin_zero", ctypes.c_char * 8),
+    ]
+
+
+def _init_winsock():
+    wsa_data = WSADATA()
+    res = ws2_32.WSAStartup(0x0202, ctypes.byref(wsa_data)) # גרסה 2.2
+    if res != 0:
+        raise Exception(f"WSAStartup failed with error: {res}")
+
+_init_winsock()
+
+class SocketResponse:
+    def __init__(self, status_code, body):
+        self.status_code = status_code
+        self.body = body
+
+    def json(self):
         return self.body
 
-def Send_socket_request(action, email="", password="", username="", newpassword="", confirmpassword="", newusername="", confirmusername=""): # func to send request to the server
+def Send_socket_request(action, email="", password="", username="", newpassword="", confirmpassword="", newusername="", confirmusername=""):
+    sock_handle = -1
     try:
-        client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # create TCP protocol stream to send data to server
-        client_socket.connect((SERVER_IP, SERVER_PORT))  # connect to the ip pf the server and the port it works on
+        # 1. יצירת סוקט עצמאי דרך ה-Windows API (AF_INET = 2, SOCK_STREAM = 1)
+        sock_handle = ws2_32.socket(2, 1, 0)
+        if sock_handle == -1 or sock_handle == 0xFFFFFFFF:
+            err = ws2_32.WSAGetLastError()
+            raise Exception(f"Failed to create socket. Error code: {err}")
 
-        payload = {"Action": action, "Email": email, "Password": password, "Username": username, "Newpassword": newpassword, "Confirmpassword": confirmpassword, "Newusername": newusername, "Confirmusername": confirmusername}  # what data will be sent
-        json_data = json.dumps(payload) # put the payload in json files
-        client_socket.sendall(json_data.encode('utf-8')) # encoding json data to bytes to stream them in the socket
+        # 2. הגדרת כתובת השרת ויציאה לחיבור (connect)
+        server_addr = sockaddr_in()
+        server_addr.sin_family = 2  # AF_INET
+        server_addr.sin_port = ws2_32.htons(SERVER_PORT)
+        server_addr.sin_addr = ws2_32.inet_addr(SERVER_IP.encode('utf-8'))
 
-        response_bytes = client_socket.recv(4096) # get response in bytes untill 4096 bytes
-        client_socket.close() # close socket data transfer finished
+        connect_res = ws2_32.connect(sock_handle, ctypes.byref(server_addr), ctypes.sizeof(server_addr))
+        if connect_res == -1:
+            err = ws2_32.WSAGetLastError()
+            raise Exception(f"Connect failed. Error code: {err}")
 
-        if not response_bytes: # if there is no response from the server
+        
+        payload = {
+            "Action": action, "Email": email, "Password": password, 
+            "Username": username, "Newpassword": newpassword, 
+            "Confirmpassword": confirmpassword, "Newusername": newusername, 
+            "Confirmusername": confirmusername
+        }
+        json_data = json.dumps(payload).encode('utf-8')
+        
+        sent = ws2_32.send(sock_handle, json_data, len(json_data), 0)
+        if sent == -1:
+            err = ws2_32.WSAGetLastError()
+            raise Exception(f"Send failed. Error code: {err}")
+
+        
+        buf_size = 4096
+        buf = ctypes.create_string_buffer(buf_size)
+        received_bytes = ws2_32.recv(sock_handle, buf, buf_size, 0)
+
+        if received_bytes <= 0:
             return None
 
-        response_obj = json.loads(response_bytes.decode('utf-8')) # decoding the response from bytes to json
-        status_code = response_obj.get("status_code", 500) # searching for key word "status code" if something wrong its error 500
-        body = response_obj.get("body", {}) # searching for key word "body" if something wrong put None
+       
+        response_bytes = buf.raw[:received_bytes]
 
-        return SocketResponse(status_code, body) # return to class with status code and body to sent to client_ui
-    except Exception as e: # catch the error if there is and print it so it wont crush
-        print("Socket error:", e)
-        return None # 
-def Register_request(email, password, username): # this func and the other one are used by client_ui
+        response_obj = json.loads(response_bytes.decode('utf-8'))
+        status_code = response_obj.get("status_code", 500)
+        body = response_obj.get("body", {})
+
+        return SocketResponse(status_code, body)
+
+    except Exception as e:
+        print("Winsock / Socket error:", e)
+        return None
+    finally:
+        
+        if sock_handle != -1 and sock_handle != 0xFFFFFFFF:
+            ws2_32.closesocket(sock_handle)
+
+
+def Register_request(email, password, username):
     return Send_socket_request("Register", email=email, password=password, username=username)
 
 def Login_request(email, password, username):
@@ -44,13 +114,11 @@ def Login_request(email, password, username):
 def Change_Password_request(email, newpassword, confirmpassword):
     return Send_socket_request("Changepassword", email=email, newpassword=newpassword, confirmpassword=confirmpassword)
 
-def Change_Username_request(email, password ,newusername, confirmusername):
-    return Send_socket_request("Changeusername", email=email ,password=password, newusername=newusername, confirmusername=confirmusername)
+def Change_Username_request(email, password, newusername, confirmusername):
+    return Send_socket_request("Changeusername", email=email, password=password, newusername=newusername, confirmusername=confirmusername)
 
 def Delete_Account_request(email, password, username):
     return Send_socket_request("Deleteaccount", email=email, password=password, username=username)
 
 def Login_asGuest_request():
     return Send_socket_request("Loginguest")
-
-   

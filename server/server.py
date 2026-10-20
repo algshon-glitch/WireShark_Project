@@ -1,24 +1,53 @@
-import socket
+import ctypes
 import json
-from pymongo import MongoClient # my datebase (NoSQL)
+from pymongo import MongoClient
 from werkzeug.security import check_password_hash, generate_password_hash
 from better_profanity import profanity
 from datetime import datetime
 import re 
 import uuid 
 
+# 
+ws2_32 = ctypes.windll.ws2_32
 
 
-client = MongoClient('mongodb://localhost:27017/') # create a connection to the MongoDB server running on localhost at port 27017
+class WSADATA(ctypes.Structure):
+    _fields_ = [
+        ("wVersion", ctypes.c_ushort),
+        ("wHighVersion", ctypes.c_ushort),
+        ("szDescription", ctypes.c_char * 257),
+        ("szSystemStatus", ctypes.c_char * 129),
+        ("iMaxSockets", ctypes.c_ushort),
+        ("iMaxUDPDSeg", ctypes.c_ushort),
+        ("lpVendorInfo", ctypes.c_void_p),
+    ]
 
-data_base = client['User_Data'] # create a database named 'User_Data'
+#
+class sockaddr_in(ctypes.Structure):
+    _fields_ = [
+        ("sin_family", ctypes.c_short),
+        ("sin_port", ctypes.c_ushort),
+        ("sin_addr", ctypes.c_ulong),
+        ("sin_zero", ctypes.c_char * 8),
+    ]
 
-collection = data_base['Users'] # create a collection named 'Users' in the 'User_Data' database
-profanity.load_censor_words() # 
-EMAIL_REGEX = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$' # this is to check if the email user written is correct 
 
-def User_Request(payload): # func that handles user request
-    action = payload.get("Action") # action like register/login
+def _init_winsock():
+    wsa_data = WSADATA()
+    res = ws2_32.WSAStartup(0x0202, ctypes.byref(wsa_data)) # גרסה 2.2
+    if res != 0:
+        raise Exception(f"WSAStartup failed with error: {res}")
+
+_init_winsock()
+
+client = MongoClient('mongodb://localhost:27017/') 
+data_base = client['User_Data'] 
+collection = data_base['Users'] 
+profanity.load_censor_words() 
+EMAIL_REGEX = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$' 
+
+def User_Request(payload): 
+    action = payload.get("Action") 
     email = payload.get("Email")
     password = payload.get("Password")
     username = payload.get("Username")
@@ -27,40 +56,37 @@ def User_Request(payload): # func that handles user request
     newusername = payload.get("Newusername")
     confirmusername = payload.get("Confirmusername")
    
-
     if action == "Register":
-        if not email or not re.match(EMAIL_REGEX, email): # checking if the email is correct based on EMAIL_REGEX
-            return {"status_code": 400, "body": {"Error": "Invalid email address format"}} # if not return 400 code
+        if not email or not re.match(EMAIL_REGEX, email): 
+            return {"status_code": 400, "body": {"Error": "Invalid email address format"}} 
 
-        user_exist = collection.find_one({"Email": email}) # seraching for the email user have puten on register
-        if user_exist: # if there is
-            return {"status_code": 400, "body": {"Error": "User with email: " + email + " already exists"}} # 
+        user_exist = collection.find_one({"Email": email}) 
+        if user_exist: 
+            return {"status_code": 400, "body": {"Error": "User with email: " + email + " already exists"}} 
 
-        if username and profanity.contains_profanity(username): # if the username contains bad words it wont let him register
+        if username and profanity.contains_profanity(username): 
             return {"status_code": 422, "body": {"Error": "Username contains inappropriate language"}}
 
-        username_exist = collection.find_one({"Username": username}) # same as email but username
+        username_exist = collection.find_one({"Username": username}) 
         if username_exist:
             return {"status_code": 409, "body": {"Error": "User with user name: " + username + " already exists"}}
 
         try:
-            hasing_password = generate_password_hash(password) # hashing the password and than putting it database
+            hasing_password = generate_password_hash(password) 
             collection.insert_one({
                 "Email": email, 
                 "Password": hasing_password, 
                 "Username": username, 
-                "First time registed": datetime.now() # the time that the user have registered
+                "First time registed": datetime.now() 
             })
         except Exception as e_r:
             print("Error inserting data into database:", e_r)
-            return {"status_code": 500, "body": {"Error": "Server error. please try again later."}} # if there is any server happened
+            return {"status_code": 500, "body": {"Error": "Server error. please try again later."}} 
 
         print("Register successfully")
-        return {"status_code": 201, "body": {"Message": "Hello " + username + ", it's nice to meet you!"}} # if all is good user have registered successfully
-
+        return {"status_code": 201, "body": {"Message": "Hello " + username + ", it's nice to meet you!"}} 
    
     elif action == "Login":
-
         if not email or not re.match(EMAIL_REGEX, email):
             return {"status_code": 400, "body": {"Error": "Invalid email address format"}}
 
@@ -85,7 +111,7 @@ def User_Request(payload): # func that handles user request
         return {"status_code": 200, "body": {"Message": "Welcome back " + username + ", it's nice to see you again!"}}
 
     elif action == "Changepassword":
-        if not email or not re.match(EMAIL_REGEX, email): # checking if the email is correct based on EMAIL_REGEX
+        if not email or not re.match(EMAIL_REGEX, email): 
             return {"status_code": 400, "body": {"Error": "Invalid email address format"}}
 
         user_exist = collection.find_one({"Email": email})
@@ -108,7 +134,7 @@ def User_Request(payload): # func that handles user request
         return {"status_code": 200, "body": {"Message": "You have changed your password successfully"}}
 
     elif action == "Changeusername":
-        if not email or not re.match(EMAIL_REGEX, email): # checking if the email is correct based on EMAIL_REGEX
+        if not email or not re.match(EMAIL_REGEX, email): 
             return {"status_code": 400, "body": {"Error": "Invalid email address format"}}
 
         user_exist = collection.find_one({"Email": email})
@@ -121,20 +147,18 @@ def User_Request(payload): # func that handles user request
         if newusername != confirmusername:
             return {"status_code": 400, "body": {"Error": "usernames do not match each other."}}
 
-        if newusername and profanity.contains_profanity(newusername): # if the username contains bad words it wont let him register
+        if newusername and profanity.contains_profanity(newusername): 
             return {"status_code": 422, "body": {"Error": "Username contains inappropriate language"}}
 
-        username_exist = collection.find_one({"Username": newusername}) # same as email but username
+        username_exist = collection.find_one({"Username": newusername}) 
         if username_exist:
             return {"status_code": 409, "body": {"Error": "User with user name: " + username + " already exists"}}
 
         try:
-
             collection.update_one( 
                 {"Email": email},
                 {"$set": {"Username": newusername}}
             )
-
         except Exception as e:
             print("Error updating new username:", e)
             return {"status_code": 500, "body": {"Error": "Server error. please try again later."}}
@@ -170,92 +194,79 @@ def User_Request(payload): # func that handles user request
             return {"status_code": 500, "body": {"Error": "Server error. please try again later."}}
         print("User Loged in as a guest successfully")
         return {"status_code": 299, "body": {"Message": "Hello " + guest_username}}
-        
-        
-            
 
 
-        
+def run_socket_server():
+    server_socket = -1
+    try:
+        # 1. יצירת סוקט שרת דרך ה-Windows API
+        server_socket = ws2_32.socket(2, 1, 0) # AF_INET = 2, SOCK_STREAM = 1
+        if server_socket == -1 or server_socket == 0xFFFFFFFF:
+            err = ws2_32.WSAGetLastError()
+            raise Exception(f"Failed to create server socket. Error: {err}")
 
+        # 2. הגדרת SO_REUSEADDR למניעת שגיאת Address already in use
+        optval = ctypes.c_int(1)
+        ws2_32.setsockopt(server_socket, 0xFFFF, 0x0004, ctypes.byref(optval), ctypes.sizeof(optval))
 
+        # 3. Bind לכתובת ולפורט
+        server_addr = sockaddr_in()
+        server_addr.sin_family = 2  # AF_INET
+        server_addr.sin_port = ws2_32.htons(12345)
+        server_addr.sin_addr = ws2_32.inet_addr("127.0.0.1".encode('utf-8'))
 
-            
+        bind_res = ws2_32.bind(server_socket, ctypes.byref(server_addr), ctypes.sizeof(server_addr))
+        if bind_res == -1:
+            err = ws2_32.WSAGetLastError()
+            raise Exception(f"Bind failed. Error: {err}")
 
-            
+        # 4. Listen (האזנה לחיבורים נכנסים עם תור של עד 5 לקוחות)
+        listen_res = ws2_32.listen(server_socket, 5)
+        if listen_res == -1:
+            err = ws2_32.WSAGetLastError()
+            raise Exception(f"Listen failed. Error: {err}")
 
+        print("Winsock Socket Server is running and listening on port 12345...")
 
-        
+        while True:
+            # 5. Accept (קבלת חיבור מלקוח חדש)
+            client_socket = ws2_32.accept(server_socket, None, None)
+            if client_socket == -1 or client_socket == 0xFFFFFFFF:
+                continue
 
+            try:
+                # קבלת הנתונים לתוך באפר של C
+                buf_size = 4096
+                buf = ctypes.create_string_buffer(buf_size)
+                received_bytes = ws2_32.recv(client_socket, buf, buf_size, 0)
 
+                if received_bytes <= 0:
+                    ws2_32.closesocket(client_socket)
+                    continue
 
+                data_bytes = buf.raw[:received_bytes]
+                payload = json.loads(data_bytes.decode('utf-8'))
+                
+               
+                response_dict = User_Request(payload) 
 
-            
+                response_json = json.dumps(response_dict).encode('utf-8')
+                ws2_32.send(client_socket, response_json, len(response_json), 0)
 
+            except Exception as e:
+                print("Error handling client connection:", e)
+            finally:
+                ws2_32.closesocket(client_socket)
 
-        
-        
-
-
-        
-
-        
-
-        
-
-
-   
-
-
-
-       
-            
-
-        
-            
-
-        
-
-
-
-def run_socket_server(): # def to run the socket connection
-    
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # start the TCP protocol stream AF_INET IS IPV4
-    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) #  setting the socket settings (not tcp) so error "ALREADY IN USE" wont happen when restarting the server
-    server_socket.bind(('127.0.0.1', 12345)) # binding the ip with the port
-    server_socket.listen(5) # 5 people wait in line at max
-    print("Socket Server is running and listening on port 12345...")
-    
-
-    while True: # infinty loop so server will work always
-        client_socket, client_address = server_socket.accept() # accepting a new socket to speak with the client and the client ip address
-        try:
-            
-            data_bytes = client_socket.recv(4096) # recving the data from the client in bytes max 4096 bytes
-            if not data_bytes: # if client close connection
-                client_socket.close() # close the socket
-                continue # go back to wait for another client
-
-            
-            payload = json.loads(data_bytes.decode('utf-8')) # if client did not disconnect decoding from bytes to json files
-            
-           
-            response_dict = User_Request(payload) # sending users data to func of the request to check for things
-
-            
-            client_socket.sendall(json.dumps(response_dict).encode('utf-8')) # sending the response in bytes to client
-
-        except Exception as e:
-            print("Error handling client connection:", e)
-        finally:
-            client_socket.close() # close the socket when done speaking with the client 
+    except Exception as e:
+        print("Server error:", e)
+    finally:
+        if server_socket != -1 and server_socket != 0xFFFFFFFF:
+            ws2_32.closesocket(server_socket)
 
 
 if __name__ == '__main__': 
     run_socket_server()
-    
-
-
-
 
     
 
