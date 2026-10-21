@@ -1,7 +1,7 @@
 import sys
 from PySide6.QtWidgets import (QApplication, QMessageBox, QTableWidget, QVBoxLayout, QWidget, QLineEdit, QPushButton, QLabel, QMainWindow, QCheckBox, QHBoxLayout, QFrame, QTextEdit)
 from client import Login_request, Register_request, Change_Password_request, Change_Username_request, Delete_Account_request, Login_asGuest_request
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QAction, QIcon
 
 class AppWindow(QMainWindow):
@@ -17,13 +17,36 @@ class AppWindow(QMainWindow):
 
         
         main_layout = QHBoxLayout(central_widget)
-        main_layout.setContentsMargins(0, 5, 0, 5) # 1-move right, 2-move down, 3-move left, 4-move up
+        main_layout.setContentsMargins(0, 0, 0, 0) # 1-move right, 2-move down, 3-move left, 4-move up
+       
         main_layout.setSpacing(1)
+        
 
        
-        self.left_screen = QLabel("Menu")
-        self.left_screen.setStyleSheet("background-color: darkblue; font-size: 50px; color: white;")  
-        self.left_screen.setAlignment(Qt.AlignHCenter | Qt.AlignTop) 
+        self.left_screen = QWidget()
+        self.left_screen.setStyleSheet("background-color: darkblue;")
+        left_layout = QVBoxLayout(self.left_screen)
+        left_layout.setContentsMargins(0, 0, 0, 0)
+
+        # 2. יצירת התווית "Menu"
+        menu_label = QLabel("Menu")
+        menu_label.setStyleSheet("font-size: 50px; color: white; background: transparent; font-weight: bold;")  
+        menu_label.setAlignment(Qt.AlignHCenter | Qt.AlignTop) 
+        left_layout.addWidget(menu_label)
+
+        home_button = QPushButton(" Home")
+        home_button.setIcon(QIcon("home-icon.png"))
+        left_layout.addWidget(home_button)
+        home_button.setIconSize(QSize(40, 40))
+        left_layout.addWidget(home_button)
+        left_layout.addStretch(1)
+        
+        
+       
+        
+       
+        
+        
 
         
         self.right_screen = QWidget()
@@ -32,6 +55,9 @@ class AppWindow(QMainWindow):
       
         right_layout = QVBoxLayout(self.right_screen)
         right_layout.setContentsMargins(0, 40, 0, 0) 
+       
+
+                
 
       
         title_label = QLabel("Welcome to PacketLens")
