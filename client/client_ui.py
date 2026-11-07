@@ -4,71 +4,81 @@ from client import Login_request, Register_request, Change_Password_request, Cha
 from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QAction, QIcon
 
+
 class AppWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Packet Lens")
-        self.setStyleSheet("background-color: darkblue;")  
         self.resize(1200, 700)
+        
+        # צבע רקע כללי כהה ומודרני לחלון
+        self.setStyleSheet("background-color: #0f172a;")  
 
-       
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
 
-        
         main_layout = QHBoxLayout(central_widget)
-        main_layout.setContentsMargins(0, 0, 0, 0) # 1-move right, 2-move down, 3-move left, 4-move up
-       
-        main_layout.setSpacing(1)
-        
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
 
-       
+        # 1. תפריט צדדי בעיצוב מודרני (Sidebar)
         self.left_screen = QWidget()
-        self.left_screen.setStyleSheet("background-color: darkblue;")
+        self.left_screen.setStyleSheet("""
+            background-color: #1e1b4b;
+            border-right: 1px solid #312e81;
+        """)
         left_layout = QVBoxLayout(self.left_screen)
-        left_layout.setContentsMargins(0, 0, 0, 0)
+        left_layout.setContentsMargins(20, 30, 20, 20)
+        left_layout.setSpacing(15)
 
-        # 2. יצירת התווית "Menu"
-        menu_label = QLabel("Menu")
-        menu_label.setStyleSheet("font-size: 50px; color: white; background: transparent; font-weight: bold;")  
-        menu_label.setAlignment(Qt.AlignHCenter | Qt.AlignTop) 
+        # כותרת תפריט
+        menu_label = QLabel("PacketLens")
+        menu_label.setStyleSheet("font-size: 24px; color: #ffffff; background: transparent; font-weight: bold;")  
+        menu_label.setAlignment(Qt.AlignLeft | Qt.AlignTop) 
         left_layout.addWidget(menu_label)
 
-        home_button = QPushButton(" Home")
+        # קו הפרדה קטן מתחת לכותרת התפריט
+        separator_menu = QFrame()
+        separator_menu.setFrameShape(QFrame.HLine)
+        separator_menu.setStyleSheet("background-color: #312e81; max-height: 1px;")
+        left_layout.addWidget(separator_menu)
+
+        # כפתור Home בעיצוב מודרני עם אייקון בית
+        home_button = QPushButton("  Home")
         home_button.setIcon(QIcon("home-icon.png"))
-        left_layout.addWidget(home_button)
-        home_button.setIconSize(QSize(40, 40))
+        home_button.setIconSize(QSize(22, 22))
+        home_button.setStyleSheet("""
+            QPushButton {
+                background-color: #3730a3;
+                color: white;
+                font-size: 16px;
+                font-weight: bold;
+                border-radius: 10px;
+                padding: 12px;
+                text-align: left;
+            }
+            QPushButton:hover {
+                background-color: #4338ca;
+            }
+        """)
         left_layout.addWidget(home_button)
         left_layout.addStretch(1)
-        
-        
-       
-        
-       
-        
-        
 
-        
+        # 2. המסך המרכזי (Dashboard / Content Area)
         self.right_screen = QWidget()
-        self.right_screen.setStyleSheet("background-color: #cfcfcf;")
+        self.right_screen.setStyleSheet("background-color: #f8fafc;") # רקע בהיר ונקי לדשבורד
 
-      
         right_layout = QVBoxLayout(self.right_screen)
-        right_layout.setContentsMargins(0, 40, 0, 0) 
-       
+        right_layout.setContentsMargins(40, 40, 40, 40) 
+        right_layout.setSpacing(20)
 
-                
-
-      
+        # כותרת ראשית לדשבורד
         title_label = QLabel("Welcome to PacketLens")
-        title_label.setStyleSheet("color: black; font-size: 50px; font-weight: bold; background: transparent;")
-        font = title_label.font()
-        font.setUnderline(True)
-        title_label.setFont(font)
-        title_label.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
+        title_label.setStyleSheet("color: #0f172a; font-size: 36px; font-weight: bold; background: transparent;")
+        title_label.setAlignment(Qt.AlignLeft | Qt.AlignTop)
         right_layout.addWidget(title_label)
 
-        
+        # קריאת נתונים מ- id.txt והצגת תוכן דינמי
         try:
             with open("id.txt", "r", encoding="utf-8") as file:
                 lines = file.readlines()
@@ -76,57 +86,77 @@ class AppWindow(QMainWindow):
                 message = lines[1].strip()
 
             if code in ["200", "201", "299"]:
+                # הודעת ברכה אישית משתמש
                 label2 = QLabel(message)
-                label2.setStyleSheet("color: black; font-size: 40px; font-weight: bold; background: transparent;")
-                label2.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
+                label2.setStyleSheet("color: #334155; font-size: 22px; font-weight: 600; background: transparent;")
                 right_layout.addWidget(label2)
-                labelinfo = QLabel("PacketLens is a powerful network analysis tool that allows you to\ncapture, analyze, and visualize network traffic in real-time.\nWith PacketLens, you can gain deep insights into your network's performance, troubleshoot issues,\nand ensure the security of your data.")
-                labelinfo.setStyleSheet("color: black; font-size: 23px; background: transparent;")
-                labelinfo.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
-                right_layout.addWidget(labelinfo)
-                sperator = QFrame() 
-                sperator.setFrameShape(QFrame.HLine)
-                sperator.setFrameShadow(QFrame.Sunken)
-                right_layout.addWidget(sperator)
+
+                # כרטיס מידע (Card style) אודות המערכת
+                info_card = QFrame()
+                info_card.setStyleSheet("""
+                    background-color: #ffffff;
+                    border-radius: 12px;
+                    border: 1px solid #e2e8f0;
+                """)
+                card_layout = QVBoxLayout(info_card)
+                card_layout.setContentsMargins(25, 25, 25, 25)
+                card_layout.setSpacing(10)
+
+                labelinfo = QLabel("PacketLens is a powerful network analysis tool that allows you to capture, analyze, and visualize network traffic in real-time. With PacketLens, you can gain deep insights into your network's performance, troubleshoot issues, and ensure the security of your data.")
+                labelinfo.setStyleSheet("color: #475569; font-size: 15px; background: transparent; line-height: 1.4;")
+                labelinfo.setWordWrap(True)
+                card_layout.addWidget(labelinfo)
+                
+                right_layout.addWidget(info_card)
+
+                # תצוגת סטטוס התחברות (אורח מול רשום) בעיצוב עדין ובולט
+                status_card = QFrame()
+                status_card.setStyleSheet("""
+                    background-color: #ffffff;
+                    border-radius: 12px;
+                    border: 1px solid #e2e8f0;
+                """)
+                status_layout = QVBoxLayout(status_card)
+                status_layout.setContentsMargins(25, 20, 25, 20)
+                status_layout.setSpacing(8)
 
                 if code == "299":
-                   warning_label = QLabel("Beware: You are logged in as a guest. Some features may be limited and your data may not be saved!")
-                   warning_label.setStyleSheet("color: #A83C2A; font-size: 20px; font-weight: bold; background: transparent;")
-                   warning_label.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
-                   right_layout.addWidget(warning_label)
-                if code == "200" or code == "201":
-                   warning_label = QLabel("You are logged in as a registered user. Enjoy full access to all features! and your data will be saved.")
-                   warning_label.setStyleSheet("color: green; font-size: 20px; font-weight: bold; background: transparent;")
-                   warning_label.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
-                   right_layout.addWidget(warning_label)
-                labeltips = QLabel("Tips: Use the menu on the left to navigate through the application and access its features.")
-                labeltips.setStyleSheet("color: black; font-size: 23px; background: transparent;")
-                labeltips.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
-                right_layout.addWidget(labeltips)   
-                sperator2 = QFrame() 
-                sperator2.setFrameShape(QFrame.HLine)
-                sperator2.setFrameShadow(QFrame.Sunken)
-                right_layout.addWidget(sperator2)
-                labelui = QLabel("PacketLens - NetWork Packet Analyzer")
-                labelui.setStyleSheet("color: black; font-size: 27px; background: transparent;")
-                labelui.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
-                right_layout.addWidget(labelui)
-                labeldev = QLabel("Developed by Shon Algazin")
-                labeldev.setStyleSheet("color: black; font-size: 23px; background: transparent;")
-                labeldev.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
-                right_layout.addWidget(labeldev)
-                
+                    warning_label = QLabel("⚠️ Guest Mode: You are logged in as a guest. Some features may be limited and your data may not be saved.")
+                    warning_label.setStyleSheet("color: #b45309; font-size: 14px; font-weight: bold; background: transparent;")
+                    status_layout.addWidget(warning_label)
+                elif code in ["200", "201"]:
+                    warning_label = QLabel("✓ Full Access: You are logged in as a registered user. Enjoy full access to all features and your data will be saved.")
+                    warning_label.setStyleSheet("color: #15803d; font-size: 14px; font-weight: bold; background: transparent;")
+                    status_layout.addWidget(warning_label)
 
+                labeltips = QLabel("💡 Tip: Use the menu on the left to navigate through the application and access its features.")
+                labeltips.setStyleSheet("color: #64748b; font-size: 14px; background: transparent;")
+                status_layout.addWidget(labeltips)
+
+                right_layout.addWidget(status_card)
+
+                # פרטי מערכת ויוצר בתחתית הדשבורד
+                footer_layout = QHBoxLayout()
+                labelui = QLabel("PacketLens - Network Packet Analyzer")
+                labelui.setStyleSheet("color: #94a3b8; font-size: 13px; background: transparent;")
+                
+                labeldev = QLabel("Developed by Shon Algazin")
+                labeldev.setStyleSheet("color: #94a3b8; font-size: 13px; background: transparent; font-weight: bold;")
+                
+                footer_layout.addWidget(labelui)
+                footer_layout.addStretch(1)
+                footer_layout.addWidget(labeldev)
+                
+                right_layout.addLayout(footer_layout)
 
         except Exception as e:
             print(f"Error reading id.txt: {e}")
 
-       
         right_layout.addStretch(1)
 
-        
-        main_layout.addWidget(self.left_screen, 6)
-        main_layout.addWidget(self.right_screen, 40)
+        # שילוב שני המסכים לפריסה הראשית (Sidebar תופס 2 חלקים, הדשבורד תופס 9 חלקים)
+        main_layout.addWidget(self.left_screen, 2)
+        main_layout.addWidget(self.right_screen, 9)
               
          
 
