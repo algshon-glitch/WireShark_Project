@@ -32,7 +32,7 @@ class AppWindow(QMainWindow):
         left_layout.setSpacing(15)
 
         # כותרת תפריט
-        menu_label = QLabel("PacketLens")
+        menu_label = QLabel("Main Menu")
         menu_label.setStyleSheet("font-size: 24px; color: #ffffff; background: transparent; font-weight: bold;")  
         menu_label.setAlignment(Qt.AlignLeft | Qt.AlignTop) 
         left_layout.addWidget(menu_label)
@@ -62,7 +62,108 @@ class AppWindow(QMainWindow):
             }
         """)
         left_layout.addWidget(home_button)
-        left_layout.addStretch(1)
+
+        settings_button = QPushButton("  Settings")
+        settings_button.setIcon(QIcon("control.png"))
+        settings_button.setIconSize(QSize(22, 22))
+        settings_button.setStyleSheet("""
+               QPushButton {
+                  background-color: #3730a3;
+                  color: white;
+                  font-size: 16px;
+                  font-weight: bold;
+                  border-radius: 10px;
+                  padding: 12px;
+                  text-align: left;
+               }
+               QPushButton:hover {
+                  background-color: #4338ca;
+               }
+            """)
+
+        left_layout.addWidget(settings_button)
+
+        scan_button = QPushButton("  Capture packets")
+        scan_button.setIcon(QIcon("magnifier.png"))
+        scan_button.setIconSize(QSize(22, 22))
+        scan_button.setStyleSheet("""
+                QPushButton {
+                     background-color: #3730a3;
+                     color: white;
+                     font-size: 16px;
+                     font-weight: bold;
+                     border-radius: 10px;
+                     padding: 12px;
+                     text-align: left;
+                  }
+                  QPushButton:hover {
+                     background-color: #4338ca;
+                  }
+                  """)
+        left_layout.addWidget(scan_button)
+
+        history_button = QPushButton("  Saved captures")
+        history_button.setIcon(QIcon("save-instagram.png"))
+        history_button.setIconSize(QSize(22, 22))
+        history_button.setStyleSheet("""
+                  QPushButton {
+                     background-color: #3730a3;
+                     color: white;
+                     font-size: 16px;
+                     font-weight: bold;
+                     border-radius: 10px;
+                     padding: 12px;
+                     text-align: left;
+                  }
+                  QPushButton:hover {
+                     background-color: #4338ca;
+                  }
+               """)
+        left_layout.addWidget(history_button)
+
+        graph_button = QPushButton("  Graphs")
+        graph_button.setIcon(QIcon("chart.png"))
+        graph_button.setIconSize(QSize(22, 22))
+        graph_button.setStyleSheet("""
+                  QPushButton {
+                     background-color: #3730a3;
+                     color: white;
+                     font-size: 16px;
+                     font-weight: bold;
+                     border-radius: 10px;
+                     padding: 12px;
+                     text-align: left;
+                  }
+                  QPushButton:hover {
+                     background-color: #4338ca;
+                  }
+               """)
+        left_layout.addWidget(graph_button)
+
+        Credits_Legal_button = QPushButton("  Credits and Legal")
+        Credits_Legal_button.setIcon(QIcon("copyright.png"))
+        Credits_Legal_button.setIconSize(QSize(22, 22))
+        Credits_Legal_button.setStyleSheet("""
+                  QPushButton {
+                     background-color: #3730a3;
+                     color: white;
+                     font-size: 16px;
+                     font-weight: bold;
+                     border-radius: 10px;
+                     padding: 12px;
+                     text-align: left;
+                  }
+                  QPushButton:hover {
+                     background-color: #4338ca;
+                  }
+               """)
+        left_layout.addWidget(Credits_Legal_button)
+
+                  
+
+
+
+        left_layout.addStretch(6)
 
         # 2. המסך המרכזי (Dashboard / Content Area)
         self.right_screen = QWidget()
@@ -121,7 +222,7 @@ class AppWindow(QMainWindow):
                 status_layout.setSpacing(8)
 
                 if code == "299":
-                    warning_label = QLabel("⚠️ Guest Mode: You are logged in as a guest. Some features may be limited and your data may not be saved.")
+                    warning_label = QLabel("⚠️ Guest Mode: You are logged in as a guest. Some features may be limited and your data may not be saved. And you will not be able to use the Ai helper.")
                     warning_label.setStyleSheet("color: #b45309; font-size: 14px; font-weight: bold; background: transparent;")
                     status_layout.addWidget(warning_label)
                 elif code in ["200", "201"]:
@@ -134,6 +235,22 @@ class AppWindow(QMainWindow):
                 status_layout.addWidget(labeltips)
 
                 right_layout.addWidget(status_card)
+
+                cpaturehere_button = QPushButton("Capture from here")
+                cpaturehere_button.setStyleSheet("""
+                     QPushButton {
+                        background-color: #2563eb;
+                        color: white;
+                        font-size: 16px;
+                        padding: 12px;
+                        border-radius: 10px;
+                     }
+                     QPushButton:hover {
+                        background-color: #1d4ed8;
+                     }
+                  """)
+                right_layout.addWidget(cpaturehere_button)
+
 
                 # פרטי מערכת ויוצר בתחתית הדשבורד
                 footer_layout = QHBoxLayout()
