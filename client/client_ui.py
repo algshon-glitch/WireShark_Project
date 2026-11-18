@@ -3,6 +3,293 @@ from PySide6.QtWidgets import (QApplication, QMessageBox, QTableWidget, QVBoxLay
 from client import Login_request, Register_request, Change_Password_request, Change_Username_request, Delete_Account_request, Login_asGuest_request
 from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QAction, QIcon
+class SettingsWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Settings - Packet Lens")
+        self.resize(1200, 700)
+        
+        # בדיקה מוקדמת של קובץ ההגדרות כדי לקבוע את צבע הרקע הראשוני של החלון
+        self.is_dark = False
+        try:
+            with open("settings.txt", "r", encoding="utf-8") as f:
+                if f.read().strip() == "dark":
+                    self.is_dark = True
+        except FileNotFoundError:
+            pass
+
+        if self.is_dark:
+            self.setStyleSheet("background-color: #090d16;")
+        else:
+            self.setStyleSheet("background-color: #0f172a;")  
+
+        self.app_window = None  # משתנה למעבר חזרה לחלון הראשי
+
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+
+        main_layout = QHBoxLayout(central_widget)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
+
+        # 1. תפריט צדדי בעיצוב מודרני (Sidebar)
+        self.left_screen = QWidget()
+        self.left_screen.setStyleSheet("""
+            background-color: #1e1b4b;
+            border-right: 1px solid #312e81;
+        """)
+        left_layout = QVBoxLayout(self.left_screen)
+        left_layout.setContentsMargins(20, 30, 20, 20)
+        left_layout.setSpacing(15)
+
+        menu_label = QLabel("Main Menu")
+        menu_label.setStyleSheet("font-size: 24px; color: #ffffff; background: transparent; font-weight: bold;")  
+        menu_label.setAlignment(Qt.AlignLeft | Qt.AlignTop) 
+        left_layout.addWidget(menu_label)
+
+        separator_menu = QFrame()
+        separator_menu.setFrameShape(QFrame.HLine)
+        separator_menu.setStyleSheet("background-color: #312e81; max-height: 1px;")
+        left_layout.addWidget(separator_menu)
+
+        # כפתור Home שחוזר חזרה לחלון הראשי
+        home_button = QPushButton("  Home")
+        home_button.setIcon(QIcon("home-icon.png"))
+        home_button.setIconSize(QSize(22, 22))
+        home_button.setStyleSheet("""
+            QPushButton {
+                background-color: #3730a3;
+                color: white;
+                font-size: 16px;
+                font-weight: bold;
+                border-radius: 10px;
+                padding: 12px;
+                text-align: left;
+            }
+            QPushButton:hover {
+                background-color: #4338ca;
+            }
+        """)
+        left_layout.addWidget(home_button)
+        home_button.clicked.connect(self.show_app_window)  
+
+        settings_button = QPushButton("  Settings")
+        settings_button.setIcon(QIcon("control.png"))
+        settings_button.setIconSize(QSize(22, 22))
+        settings_button.setStyleSheet("""
+            QPushButton {
+               background-color: #3730a3;
+               color: white;
+               font-size: 16px;
+               font-weight: bold;
+               border-radius: 10px;
+               padding: 12px;
+               text-align: left;
+            }
+            QPushButton:hover {
+               background-color: #4338ca;
+            }
+        """)
+        left_layout.addWidget(settings_button)
+
+        scan_button = QPushButton("  Capture packets")
+        scan_button.setIcon(QIcon("magnifier.png"))
+        scan_button.setIconSize(QSize(22, 22))
+        scan_button.setStyleSheet("""
+            QPushButton {
+                 background-color: #3730a3;
+                 color: white;
+                 font-size: 16px;
+                 font-weight: bold;
+                 border-radius: 10px;
+                 padding: 12px;
+                 text-align: left;
+              }
+              QPushButton:hover {
+                 background-color: #4338ca;
+              }
+        """)
+        left_layout.addWidget(scan_button)
+
+        history_button = QPushButton("  Saved captures")
+        history_button.setIcon(QIcon("save-instagram.png"))
+        history_button.setIconSize(QSize(22, 22))
+        history_button.setStyleSheet("""
+            QPushButton {
+               background-color: #3730a3;
+               color: white;
+               font-size: 16px;
+               font-weight: bold;
+               border-radius: 10px;
+               padding: 12px;
+               text-align: left;
+            }
+            QPushButton:hover {
+               background-color: #4338ca;
+            }
+        """)
+        left_layout.addWidget(history_button)
+
+        graph_button = QPushButton("  Graphs")
+        graph_button.setIcon(QIcon("chart.png"))
+        graph_button.setIconSize(QSize(22, 22))
+        graph_button.setStyleSheet("""
+            QPushButton {
+               background-color: #3730a3;
+               color: white;
+               font-size: 16px;
+               font-weight: bold;
+               border-radius: 10px;
+               padding: 12px;
+               text-align: left;
+            }
+            QPushButton:hover {
+               background-color: #4338ca;
+            }
+        """)
+        left_layout.addWidget(graph_button)
+
+        Credits_Legal_button = QPushButton("  Credits and Legal")
+        Credits_Legal_button.setIcon(QIcon("copyright.png"))
+        Credits_Legal_button.setIconSize(QSize(22, 22))
+        Credits_Legal_button.setStyleSheet("""
+            QPushButton {
+               background-color: #3730a3;
+               color: white;
+               font-size: 16px;
+               font-weight: bold;
+               border-radius: 10px;
+               padding: 12px;
+               text-align: left;
+            }
+            QPushButton:hover {
+               background-color: #4338ca;
+            }
+        """)
+        left_layout.addWidget(Credits_Legal_button)   
+
+        left_layout.addStretch(6)
+
+        # 2. המסך המרכזי של ההגדרות
+        self.right_screen = QWidget()
+        self.right_screen.setStyleSheet("background-color: #090d16;" if self.is_dark else "background-color: #f8fafc;")
+        
+        self.right_layout = QVBoxLayout(self.right_screen)
+        self.right_layout.setContentsMargins(40, 40, 40, 40)
+        self.right_layout.setSpacing(20)
+
+        # כותרת ראשית
+        self.title_label = QLabel("Settings & Preferences")
+        self.title_label.setAlignment(Qt.AlignLeft | Qt.AlignTop)
+        self.right_layout.addWidget(self.title_label)
+
+        # ---- כרטיס עיצוב וממשק (Theme Settings) ----
+        self.theme_card = QFrame()
+        theme_layout = QVBoxLayout(self.theme_card)
+        theme_layout.setContentsMargins(25, 20, 25, 20)
+        theme_layout.setSpacing(10)
+
+        self.theme_title = QLabel("🎨 Appearance Settings")
+        theme_layout.addWidget(self.theme_title)
+
+        self.dark_mode_checkbox = QCheckBox("Enable Dark Mode (Dark background for dashboard & windows)")
+        self.dark_mode_checkbox.setChecked(self.is_dark) # קביעת מצב הסימון לפי השמירה
+        self.dark_mode_checkbox.stateChanged.connect(self.toggle_dark_mode)
+        theme_layout.addWidget(self.dark_mode_checkbox)
+
+        self.right_layout.addWidget(self.theme_card)
+
+        # ---- כרטיס התראות ואבטחה (Security & Alerts) ----
+        self.security_card = QFrame()
+        security_layout = QVBoxLayout(self.security_card)
+        security_layout.setContentsMargins(25, 20, 25, 20)
+        security_layout.setSpacing(10)
+
+        self.security_title = QLabel("🛡️ Security & Real-time Alerts")
+        security_layout.addWidget(self.security_title)
+
+        self.alert_checkbox = QLabel("Active Threat Detection: Enabled (Monitors unknown IPs and abnormal packets)")
+        security_layout.addWidget(self.alert_checkbox)
+
+        self.right_layout.addWidget(self.security_card)
+
+        # ---- כרטיס מידע על המערכת (About) ----
+        self.about_card = QFrame()
+        about_layout = QVBoxLayout(self.about_card)
+        about_layout.setContentsMargins(25, 20, 25, 20)
+        about_layout.setSpacing(10)
+
+        self.about_title = QLabel("ℹ️ System Information")
+        about_layout.addWidget(self.about_title)
+
+        self.version_label = QLabel("PacketLens Version: 0.2.3 (Final Project Build)\nDatabase: MongoDB (NoSQL)\nFramework: PySide6 (Python)")
+        about_layout.addWidget(self.version_label)
+
+        self.right_layout.addWidget(self.about_card)
+
+        self.right_layout.addStretch(1)
+
+        # הפעלת העיצוב הראשוני בהתאם למשתנה
+        self.apply_theme_styles(self.is_dark)
+
+        # הוספת התפריט והמסך המרכזי לפריסה הראשית
+        main_layout.addWidget(self.left_screen, 2)
+        main_layout.addWidget(self.right_screen, 9)
+
+    def toggle_dark_mode(self):
+        """מעדכן את העיצוב ושומר את הבחירה בקובץ settings.txt"""
+        is_dark = self.dark_mode_checkbox.isChecked()
+        
+        try:
+            with open("settings.txt", "w", encoding="utf-8") as f:
+                f.write("dark" if is_dark else "light")
+        except Exception as e:
+            print(f"Error saving settings: {e}")
+
+        self.apply_theme_styles(is_dark)
+
+    def apply_theme_styles(self, is_dark):
+        """פונקציה המרכזת את עיצוב הצבעים והטקסטים לכל מצב"""
+        if is_dark:
+            self.setStyleSheet("background-color: #090d16;")
+            self.right_screen.setStyleSheet("background-color: #090d16;")
+            
+            card_style = "background-color: #1e1b4b; border-radius: 12px; border: 1px solid #312e81;"
+            self.theme_card.setStyleSheet(card_style)
+            self.security_card.setStyleSheet(card_style)
+            self.about_card.setStyleSheet(card_style)
+            
+            self.title_label.setStyleSheet("color: #f8fafc; font-size: 36px; font-weight: bold; background: transparent;")
+            self.theme_title.setStyleSheet("color: #ffffff; font-size: 18px; font-weight: bold; background: transparent;")
+            self.security_title.setStyleSheet("color: #ffffff; font-size: 18px; font-weight: bold; background: transparent;")
+            self.about_title.setStyleSheet("color: #ffffff; font-size: 18px; font-weight: bold; background: transparent;")
+            
+            self.dark_mode_checkbox.setStyleSheet("color: #cbd5e1; font-size: 14px; background: transparent;")
+            self.alert_checkbox.setStyleSheet("color: #4ade80; font-size: 14px; font-weight: bold; background: transparent;")
+            self.version_label.setStyleSheet("color: #94a3b8; font-size: 14px; background: transparent; line-height: 1.4;")
+        else:
+            self.setStyleSheet("background-color: #0f172a;")
+            self.right_screen.setStyleSheet("background-color: #f8fafc;")
+            
+            card_style = "background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0;"
+            self.theme_card.setStyleSheet(card_style)
+            self.security_card.setStyleSheet(card_style)
+            self.about_card.setStyleSheet(card_style)
+            
+            self.title_label.setStyleSheet("color: #0f172a; font-size: 36px; font-weight: bold; background: transparent;")
+            self.theme_title.setStyleSheet("color: #1e293b; font-size: 18px; font-weight: bold; background: transparent;")
+            self.security_title.setStyleSheet("color: #1e293b; font-size: 18px; font-weight: bold; background: transparent;")
+            self.about_title.setStyleSheet("color: #1e293b; font-size: 18px; font-weight: bold; background: transparent;")
+            
+            self.dark_mode_checkbox.setStyleSheet("color: #475569; font-size: 14px; background: transparent;")
+            self.alert_checkbox.setStyleSheet("color: #15803d; font-size: 14px; font-weight: bold; background: transparent;")
+            self.version_label.setStyleSheet("color: #64748b; font-size: 14px; background: transparent; line-height: 1.4;")
+
+    def show_app_window(self):
+        if self.app_window is None:
+            self.app_window = AppWindow()
+        self.app_window.show()
+        self.hide()
 
 
 class AppWindow(QMainWindow):
@@ -10,9 +297,21 @@ class AppWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("Packet Lens")
         self.resize(1200, 700)
+        self.settings_window = None
         
-        # צבע רקע כללי כהה ומודרני לחלון
-        self.setStyleSheet("background-color: #0f172a;")  
+        # בדיקה האם מצב Dark Mode פעיל בקובץ ההגדרות
+        is_dark = False
+        try:
+            with open("settings.txt", "r", encoding="utf-8") as f:
+                if f.read().strip() == "dark":
+                    is_dark = True
+        except FileNotFoundError:
+            pass
+
+        if is_dark:
+            self.setStyleSheet("background-color: #090d16;")
+        else:
+            self.setStyleSheet("background-color: #0f172a;")  
 
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -43,7 +342,7 @@ class AppWindow(QMainWindow):
         separator_menu.setStyleSheet("background-color: #312e81; max-height: 1px;")
         left_layout.addWidget(separator_menu)
 
-        # כפתור Home בעיצוב מודרני עם אייקון בית
+        # כפתור Home
         home_button = QPushButton("  Home")
         home_button.setIcon(QIcon("home-icon.png"))
         home_button.setIconSize(QSize(22, 22))
@@ -80,8 +379,8 @@ class AppWindow(QMainWindow):
                   background-color: #4338ca;
                }
             """)
-
         left_layout.addWidget(settings_button)
+        settings_button.clicked.connect(self.show_settings_window)
 
         scan_button = QPushButton("  Capture packets")
         scan_button.setIcon(QIcon("magnifier.png"))
@@ -159,15 +458,14 @@ class AppWindow(QMainWindow):
                """)
         left_layout.addWidget(Credits_Legal_button)
 
-                  
-
-
-
         left_layout.addStretch(6)
 
         # 2. המסך המרכזי (Dashboard / Content Area)
         self.right_screen = QWidget()
-        self.right_screen.setStyleSheet("background-color: #f8fafc;") # רקע בהיר ונקי לדשבורד
+        if is_dark:
+            self.right_screen.setStyleSheet("background-color: #090d16;")
+        else:
+            self.right_screen.setStyleSheet("background-color: #f8fafc;")
 
         right_layout = QVBoxLayout(self.right_screen)
         right_layout.setContentsMargins(40, 40, 40, 40) 
@@ -175,11 +473,14 @@ class AppWindow(QMainWindow):
 
         # כותרת ראשית לדשבורד
         title_label = QLabel("Welcome to PacketLens")
-        title_label.setStyleSheet("color: #0f172a; font-size: 36px; font-weight: bold; background: transparent;")
+        if is_dark:
+            title_label.setStyleSheet("color: #f8fafc; font-size: 36px; font-weight: bold; background: transparent;")
+        else:
+            title_label.setStyleSheet("color: #0f172a; font-size: 36px; font-weight: bold; background: transparent;")
         title_label.setAlignment(Qt.AlignLeft | Qt.AlignTop)
         right_layout.addWidget(title_label)
 
-        # קריאת נתונים מ- id.txt והצגת תוכן דינמי
+        # קריאת נתונים מ- id.txt והצגת תוכן דינמי מקורי
         try:
             with open("id.txt", "r", encoding="utf-8") as file:
                 lines = file.readlines()
@@ -187,51 +488,60 @@ class AppWindow(QMainWindow):
                 message = lines[1].strip()
 
             if code in ["200", "201", "299"]:
-                # הודעת ברכה אישית משתמש
+                # הודעת ברכה אישית למשתמש
                 label2 = QLabel(message)
-                label2.setStyleSheet("color: #334155; font-size: 22px; font-weight: 600; background: transparent;")
+                if is_dark:
+                    label2.setStyleSheet("color: #cbd5e1; font-size: 22px; font-weight: 600; background: transparent;")
+                else:
+                    label2.setStyleSheet("color: #334155; font-size: 22px; font-weight: 600; background: transparent;")
                 right_layout.addWidget(label2)
 
                 # כרטיס מידע (Card style) אודות המערכת
                 info_card = QFrame()
-                info_card.setStyleSheet("""
-                    background-color: #ffffff;
-                    border-radius: 12px;
-                    border: 1px solid #e2e8f0;
-                """)
+                if is_dark:
+                    info_card.setStyleSheet("background-color: #1e1b4b; border-radius: 12px; border: 1px solid #312e81;")
+                else:
+                    info_card.setStyleSheet("background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0;")
+                
                 card_layout = QVBoxLayout(info_card)
                 card_layout.setContentsMargins(25, 25, 25, 25)
                 card_layout.setSpacing(10)
 
                 labelinfo = QLabel("PacketLens is a powerful network analysis tool that allows you to capture, analyze, and visualize network traffic in real-time. With PacketLens, you can gain deep insights into your network's performance, troubleshoot issues, and ensure the security of your data.")
-                labelinfo.setStyleSheet("color: #475569; font-size: 15px; background: transparent; line-height: 1.4;")
+                if is_dark:
+                    labelinfo.setStyleSheet("color: #94a3b8; font-size: 15px; background: transparent; line-height: 1.4;")
+                else:
+                    labelinfo.setStyleSheet("color: #475569; font-size: 15px; background: transparent; line-height: 1.4;")
                 labelinfo.setWordWrap(True)
                 card_layout.addWidget(labelinfo)
                 
                 right_layout.addWidget(info_card)
 
-                # תצוגת סטטוס התחברות (אורח מול רשום) בעיצוב עדין ובולט
+                # תצוגת סטטוס התחברות (אורח מול רשום)
                 status_card = QFrame()
-                status_card.setStyleSheet("""
-                    background-color: #ffffff;
-                    border-radius: 12px;
-                    border: 1px solid #e2e8f0;
-                """)
+                if is_dark:
+                    status_card.setStyleSheet("background-color: #1e1b4b; border-radius: 12px; border: 1px solid #312e81;")
+                else:
+                    status_card.setStyleSheet("background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0;")
+                
                 status_layout = QVBoxLayout(status_card)
                 status_layout.setContentsMargins(25, 20, 25, 20)
                 status_layout.setSpacing(8)
 
                 if code == "299":
                     warning_label = QLabel("⚠️ Guest Mode: You are logged in as a guest. Some features may be limited and your data may not be saved. And you will not be able to use the Ai helper.")
-                    warning_label.setStyleSheet("color: #b45309; font-size: 14px; font-weight: bold; background: transparent;")
+                    warning_label.setStyleSheet("color: #f59e0b;" if is_dark else "color: #b45309;")
+                    warning_label.setStyleSheet(warning_label.styleSheet() + " font-size: 14px; font-weight: bold; background: transparent;")
                     status_layout.addWidget(warning_label)
                 elif code in ["200", "201"]:
                     warning_label = QLabel("✓ Full Access: You are logged in as a registered user. Enjoy full access to all features and your data will be saved.")
-                    warning_label.setStyleSheet("color: #15803d; font-size: 14px; font-weight: bold; background: transparent;")
+                    warning_label.setStyleSheet("color: #4ade80;" if is_dark else "color: #15803d;")
+                    warning_label.setStyleSheet(warning_label.styleSheet() + " font-size: 14px; font-weight: bold; background: transparent;")
                     status_layout.addWidget(warning_label)
 
                 labeltips = QLabel("💡 Tip: Use the menu on the left to navigate through the application and access its features.")
-                labeltips.setStyleSheet("color: #64748b; font-size: 14px; background: transparent;")
+                labeltips.setStyleSheet("color: #94a3b8;" if is_dark else "color: #64748b;")
+                labeltips.setStyleSheet(labeltips.styleSheet() + " font-size: 14px; background: transparent;")
                 status_layout.addWidget(labeltips)
 
                 right_layout.addWidget(status_card)
@@ -250,7 +560,6 @@ class AppWindow(QMainWindow):
                      }
                   """)
                 right_layout.addWidget(cpaturehere_button)
-
 
                 # פרטי מערכת ויוצר בתחתית הדשבורד
                 footer_layout = QHBoxLayout()
@@ -271,9 +580,17 @@ class AppWindow(QMainWindow):
 
         right_layout.addStretch(1)
 
-        # שילוב שני המסכים לפריסה הראשית (Sidebar תופס 2 חלקים, הדשבורד תופס 9 חלקים)
+        # שילוב שני המסכים לפריסה הראשית
         main_layout.addWidget(self.left_screen, 2)
         main_layout.addWidget(self.right_screen, 9)
+
+    def show_settings_window(self):
+        if self.settings_window is None:
+            self.settings_window = SettingsWindow()
+        self.settings_window.show()
+        self.hide()
+
+          
               
          
 
